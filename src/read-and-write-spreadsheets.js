@@ -1,15 +1,8 @@
-const meetingSheetName = 'meetings';
+const meetingSheetName = 'Meetings';
 const responseSheetName = 'Form Responses 1';
-const settingsSheetName = 'settings';
-const typeAname = 'excludeThis';
-const typeBname = 'excludeThese';
-const typeContactName = 'contact';
-const optionalTypes = {
-  typeA: `{${typeAname}}`,
-  typeB: `{${typeBname}`,
-  typeContact: `{${typeContactName}}`
-};
+const settingsSheetName = 'Settings';
 
+/* Not needed as of now
 // convert spreadsheet column letter to number starting from 1
 function parseColumnTypeLetterToNumber(letter) {
   let column = 0;
@@ -19,12 +12,13 @@ function parseColumnTypeLetterToNumber(letter) {
   }
   return column - 1;
 }
+*/
 
-function parseParticipantRow(participantData, columnHeaders) {
+function parseParticipantRow(participantData) {
   const lastUpdatedColumn = 0;
-  const emailColumn = 1;
-  const subscriptionColumn = 2;
-  const firstNameColumn = 3;
+  const firstNameColumn = 1;
+  const emailColumn = 2;
+  const subscriptionColumn = 3;
   const lastNameColumn = 4;
 
   const firstName = participantData[firstNameColumn] ? participantData[firstNameColumn].trim() : '';
@@ -32,80 +26,32 @@ function parseParticipantRow(participantData, columnHeaders) {
 
   const fullName = `${firstName} ${lastName}`;
 
-  const getTypeBValues = (columnHeader, i) => {
-    const columnLetters = columnHeader
-      .match(/\{[^}]*\} */g)[0] // get content inside curly braces
-      .match(/\(([^)]+)\) */g)[0] // get content inside braces
-      .replace(/[^0-9a-z]/gi, '') // replace other special characters
-      .split('');
-
-    const [first, second] = columnLetters;
-    const col1 = first ? parseColumnTypeLetterToNumber(first) : '';
-    const col2 = second ? parseColumnTypeLetterToNumber(second) : '';
-    const str1 = col1 ? participantData[col1] : '';
-    const str2 = col2 ? participantData[col2] : '';
-    const merged = `${str1}${str2}`.toLowerCase();
-
-    return `${participantData[i]}|${merged}`
-      .toLowerCase()
-      .split(' ')
-      .join('');
-  };
-
-  /**
-   * Function which maps contact information (type: contact) and optional conditions
-   * for pair matching (typeA, typeB)
-   * @returns {object} optional participant information
-   */
-  const assignOptionalValues = () => {
-    const optionalValues = { typeA: {}, typeB: {}, typeContact: {} };
-    columnHeaders.forEach((curr, i) => {
-      if (curr.indexOf(optionalTypes.typeA) > -1) {
-        const key = `${typeAname}_${i}`;
-        optionalValues.typeA[key] = participantData[i] ? participantData[i] : '';
-      }
-      if (curr.indexOf(optionalTypes.typeB) > -1) {
-        const key = `${typeBname}_${i}`;
-        const value = getTypeBValues(curr, i);
-        optionalValues.typeB[key] = value;
-      }
-      if (curr.indexOf(optionalTypes.typeContact) > -1) {
-        const key = curr
-          .replace(optionalTypes.typeContact, '')
-          .replace(/ *\{[^}]*\} */g, '') // replace content inside curly braces, necessary if {typeA} or {typeB} exclusions on same header
-          .trim();
-        optionalValues.typeContact[key] = participantData[i] ? participantData[i] : '';
-      }
-    });
-    return optionalValues;
-  };
-
   const participant = {
     lastUpdated: participantData[lastUpdatedColumn],
     firstName,
     lastName,
     fullName,
     email: participantData[emailColumn].trim().toLowerCase(),
-    isActive: participantData[subscriptionColumn] === 'Subscribe',
-    optionalTypeValues: assignOptionalValues()
+    isSubscribed: participantData[subscriptionColumn] === 'Kyllä'
   };
 
   return participant;
 }
 
+// finds and lists currently subscribed participants
 function getSubscribedParticipants(participants) {
   const subscribedDatapoints = {};
   const unsubscribedDatapoints = {};
 
   participants.forEach(p => {
-    if (p.isActive) {
+    if (p.isSubscribed) {
       subscribedDatapoints[p.email] = p;
     } else {
       unsubscribedDatapoints[p.email] = p;
     }
   });
 
-  //  delete participants if they have later unsubscription time
+  // delete participants if they have unsubscribed after subscribing
   Object.keys(unsubscribedDatapoints).forEach(key => {
     const unsubscribeTime = new Date(unsubscribedDatapoints[key].lastUpdated).getTime();
     const subscribeTime = subscribedDatapoints[key]
@@ -147,16 +93,29 @@ export function readMeetings() {
 
   const trimmedMeetingData = meetingRawData.length
     ? meetingRawData.map(meeting => {
-        const firstPerson = meeting[1].replace(',', '').trim();
-        const secondPerson = meeting[2].replace(',', '').trim();
+        // USING AN ARRAY TO SUPPORT 3 TO 4 PEOPLE
+        const people =
+          meeting[4] === 'none'
+            ? [
+                meeting[1].replace(',', '').trim(),
+                meeting[2].replace(',', '').trim(),
+                meeting[3].replace(',', '').trim()
+              ]
+            : [
+                meeting[1].replace(',', '').trim(),
+                meeting[2].replace(',', '').trim(),
+                meeting[3].replace(',', '').trim(),
+                meeting[4].replace(',', '').trim()
+              ];
         const emailSentText = meeting[0];
-        return [emailSentText, firstPerson, secondPerson];
+        return [emailSentText, people];
       })
     : [];
 
   return trimmedMeetingData;
 }
 
+// HAS TO BE FIXED PROBABLY
 export function writeMeetings(newMeetings) {
   const meetingSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(meetingSheetName);
   const rangeToWrite = meetingSheet.getRange(

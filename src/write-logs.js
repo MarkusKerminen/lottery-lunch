@@ -1,4 +1,4 @@
-const logsSheetName = 'logs';
+const logsSheetName = 'Logs';
 
 export default function writeScoredMeetingsLog(scoredMeetingsLogArr) {
   const logsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(logsSheetName);

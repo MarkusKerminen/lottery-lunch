@@ -1,11 +1,15 @@
 {
-  "name": "apps-script-starter",
-  "version": "3.4.1",
+  "name": "sissikahvit-lottery-bottery",
+  "version": "4.0.0",
   "description": "A lottery lunch tool running on Google's Spreadsheets, Forms & Gmail",
-  "author": {
+  "original author": {
     "name": "Oula Antere",
     "email": "oula.antere@gmail.com",
     "url": "https://linkedin.com/in/oulaantere"
+  },
+  "author": {
+    "name": "Markus Kerminen",
+    "email": "markus.kerminen@gmail.com"
   },
   "license": "MIT",
   "main": "src/index.js",
@@ -24,7 +28,8 @@
     "apps-script"
   ],
   "dependencies": {
-    "core-js": "^2.6.5"
+    "core-js": "^2.6.5",
+    "lodash": "^4.17.20"
   },
   "devDependencies": {
     "@babel/core": "^7.6.0",
